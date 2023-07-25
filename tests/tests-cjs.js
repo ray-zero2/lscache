@@ -177,19 +177,23 @@
     removeItem(exprKey);
   }
 
-  function flushExpiredItem(key) {
+  function isExpired(key) {
     var exprKey = expirationKey(key);
     var expr = getItem(exprKey);
+    if(!expr) return false;
+    var expirationTime = parseInt(expr, EXPIRY_RADIX);
 
-    if (expr) {
-      var expirationTime = parseInt(expr, EXPIRY_RADIX);
+    return currentTime() >= expirationTime;
+  }
 
-      // Check if we should actually kick item out of storage
-      if (currentTime() >= expirationTime) {
-        removeItem(key);
-        removeItem(exprKey);
-        return true;
-      }
+  function flushExpiredItem(key) {
+    var exprKey = expirationKey(key);
+
+    // Check if we should actually kick item out of storage
+    if (isExpired(key)) {
+      removeItem(key);
+      removeItem(exprKey);
+      return true;
     }
   }
 
@@ -293,7 +297,7 @@
       if (!supportsStorage()) return null;
 
       // Return the de-serialized item if not expired
-      if (flushExpiredItem(key)) { return null; }
+      if (isExpired(key)) { return null; }
 
       // Tries to de-serialize stored value if its an object, and returns the normal value otherwise.
       var value = getItem(key);
